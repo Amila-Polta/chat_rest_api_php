@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+  app:
+    build: .
+    volumes:
+      - .:/var/www/html
+    ports:
+      - 8000:80
+
+  db:
+    image: mysql
+    volumes:
+      - db-data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: chat_php_db
+      MYSQL_ROOT_PASSWORD: 123
+
+volumes:
+  db-data:
+    external: false

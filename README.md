@@ -1,4 +1,9 @@
-# dockerized-cakephp-app
-Creating CakePHP 2.x Application with Docker from Scratch
+# Chat rest api 
 
-See my blog post for more details: http://onoblog.com/cakephp2-docker-scratch/
+Chat rest api with cake php 2.9
+
+This uses 
+    1. Firebase to send messages.
+    2. Mysql to save data.
+
+Create a database config file to run this project and edit docker-compose file accordingly
