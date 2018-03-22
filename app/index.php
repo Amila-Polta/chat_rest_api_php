@@ -15,3 +15,4 @@
  */
 
 require 'webroot' . DIRECTORY_SEPARATOR . 'index.php';
+require __DIR__ . '../vendors/autoload.php';

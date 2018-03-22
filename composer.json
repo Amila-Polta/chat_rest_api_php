@@ -25,7 +25,10 @@
   },
   "require": {
     "php": ">=5.3.0",
-    "ext-mcrypt": "*"
+    "ext-mcrypt": "*",
+    "firebase/php-jwt": "^5.0",
+    "kreait/firebase-php": "^4.0",
+    "ktamas77/firebase-php": "dev-master"
   },
   "require-dev": {
     "phpunit/phpunit": "<6.0.0",

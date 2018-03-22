@@ -39,3 +39,5 @@ if (!defined('CAKE_CORE_INCLUDE_PATH')) {
 }
 
 require APP_DIR . DS . WEBROOT_DIR . DS . 'index.php';
+require __DIR__ . '/vendors/autoload.php';
+
