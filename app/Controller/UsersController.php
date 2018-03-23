@@ -374,8 +374,20 @@ class UsersController extends AppController
             );
         }
 
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
 
-
+        $fc = new FirebaseComponent();
+        return $fc->sendMessage($loggedInUser, $requestData);
     }
 
 

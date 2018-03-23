@@ -79,6 +79,53 @@ class FirebaseComponent {
 
     }
 
+    public function sendMessage ($loggedUser, $requssetData) {
+
+        $loggedUserId = $loggedUser['User']['id'];
+        $threadId = $requssetData->thread_id;
+        $messageText = $requssetData->text;
+
+        //Create message id
+        $url = 'https://practera-notification.firebaseio.com/messages/'.$loggedUserId.'/'.$threadId.'/.json';
+
+        $post_body = '{}';
+
+        $message_id_response = json_decode($this->makeHttpRequest($url, $post_body, 'POST'));
+
+        $message_id = $message_id_response->name;
+
+        $url = 'https://practera-notification.firebaseio.com/.json';
+
+        //Create post body
+        $post_body = '{
+                "messages/'.$loggedUserId.'/'.$message_id.'/messageId" : "'.$message_id.'",
+                "messages/'.$loggedUserId.'/'.$message_id.'/senderId" : "'.$loggedUserId.'",
+                "messages/'.$loggedUserId.'/'.$message_id.'/text" : "'.$messageText.'",
+                "messages/'.$loggedUserId.'/'.$message_id.'/timeStamp" : "'.time().'",
+                "messages/'.$loggedUserId.'/'.$message_id.'/type" : "text",';
+
+        foreach ($requssetData->recipient as $userId) {
+                $post_body = $post_body.'"messages/'.$userId.'/'.$message_id.'/messageId" : "'.$message_id.'",
+                "messages/'.$userId.'/'.$message_id.'/senderId" : "'.$loggedUserId.'",
+                "messages/'.$userId.'/'.$message_id.'/text" : "'.$messageText.'",
+                "messages/'.$userId.'/'.$message_id.'/timeStamp" : "'.time().'",
+                "messages/'.$userId.'/'.$message_id.'/type" : "text",
+                "threads/'.$userId.'/'.$threadId.'/timeStamp" : "'.time().'",
+                "threads/'.$userId.'/'.$threadId.'/lastMessage" : "'.$messageText.'",
+                "threads/'.$userId.'/'.$threadId.'/senderId" : "'.$loggedUserId.'",
+                "threads/'.$userId.'/'.$threadId.'/unseenCount" : "1",';
+        }
+
+        $post_body = $post_body.'"threads/'.$loggedUserId.'/'.$threadId.'/timeStamp" : "'.time().'",
+                "threads/'.$loggedUserId.'/'.$threadId.'/lastMessage" : "'.$messageText.'",
+                "threads/'.$loggedUserId.'/'.$threadId.'/senderId" : "'.$loggedUserId.'",
+                "threads/'.$loggedUserId.'/'.$threadId.'/unseenCount" : "0"
+                }';
+
+        return $this->makeHttpRequest($url, $post_body, 'PATCH');
+
+    }
+
     /**
      * @param $url
      * @param $body
