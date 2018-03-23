@@ -2,7 +2,7 @@
 
 App::uses('AppController', 'Controller');
 App::uses('User', 'Model');
-App::uses('Authentication', 'Controller/Component');
+App::uses('FirebaseComponent', 'Controller/Component');
 App::uses('JWTokenComponent', 'Controller/Component');
 
 
@@ -263,11 +263,6 @@ class UsersController extends AppController
             );
         }
 
-//        $jwt = new JWTokenComponent();
-//        $token = $jwt->createUserJWToken($loggedInUser['User']['email'], $loggedInUser['User']['id']);
-
-//        var_dump($token);
-
         $users = $this->User->find('all',['fields' => ['id','first_name','last_name','email','image_url']]);
 
         return json_encode(
@@ -276,6 +271,52 @@ class UsersController extends AppController
                 'data' => $users
             )
         );
+    }
+
+
+    public function createOneToOneChat (){
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get data from req body
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        //Find user
+        $user = $this->User->findById($requestData->user_id);
+        if (!$user) {
+            $this->response->statusCode(404);
+            return json_encode(
+                array(
+                    'message' => 'User was not found',
+                    'data' => null
+                )
+            );
+        }
+
+        //Create User
+        $fc = new FirebaseComponent();
+        return ($fc->createOneToOneChat($loggedInUser, $user));
     }
 
 
