@@ -34,6 +34,7 @@ Router::connect('/pages/*', array('controller' => 'pages', 'action' => 'display'
 //User custom routes
 Router::connect('/users/login', array('controller' => 'users', 'action' => 'login', 'method' => 'POST'));
 Router::connect('/users/create', array('controller' => 'users', 'action' => 'createOneToOneChat', 'method' => 'POST'));
+Router::connect('/users/group', array('controller' => 'users', 'action' => 'createGroupChat', 'method' => 'POST'));
 
 
 

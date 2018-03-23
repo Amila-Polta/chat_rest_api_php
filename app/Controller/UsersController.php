@@ -238,7 +238,7 @@ class UsersController extends AppController
         return json_encode(
             array(
                 'message' => "User is logged in",
-                'data' => $token
+                'data' => $user
             )
         );
     }
@@ -319,6 +319,64 @@ class UsersController extends AppController
         return ($fc->createOneToOneChat($loggedInUser, $user));
     }
 
+
+    /**
+     * This is to create messages groups
+     * @return mixed|string
+     */
+    public function createGroupChat () {
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get data from req body
+        $requestData = $this->request->input('json_decode',true);
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $fc = new FirebaseComponent();
+        return $fc->createGroupThreads($requestData);
+    }
+
+
+    public function sendMessage () {
+
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+
+
+    }
 
 
 }

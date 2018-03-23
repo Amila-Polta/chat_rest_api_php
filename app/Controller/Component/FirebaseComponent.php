@@ -4,6 +4,11 @@
 
 class FirebaseComponent {
 
+    /**
+     * @param $userOne
+     * @param $userTwo
+     * @return mixed|string
+     */
     public function createOneToOneChat ($userOne, $userTwo) {
         $url = 'https://practera-notification.firebaseio.com/threads.json';
 
@@ -17,12 +22,8 @@ class FirebaseComponent {
             $thread_id = $uOneId.'_'.$uTwoId;
         }
 
-        $uOneId = $userOne['User']['id'];
-        $uTwoId = $userTwo['User']['id'];
-
-
         //Create post body
-        $request_body = '{
+        $post_body = '{
                 "'.$uOneId.'/'.$thread_id.'/createdTime" : "'.time().'",
                 "'.$uOneId.'/'.$thread_id.'/displayName" : "'.$userTwo['User']['first_name'].' '.$userTwo['User']['last_name'].'",
                 "'.$uOneId.'/'.$thread_id.'/threadId" : "'.$thread_id.'",
@@ -39,9 +40,51 @@ class FirebaseComponent {
                 "'.$uTwoId.'/'.$thread_id.'/user" : "'.$uOneId.'"
             }';
 
-        return $this->makeHttpRequest($url, $request_body, 'PATCH');
+        return $this->makeHttpRequest($url, $post_body, 'PATCH');
     }
 
+
+    public function createGroupThreads ($requestData) {
+
+        //Generate group
+        $url = 'https://practera-notification.firebaseio.com/groups.json';
+        $group_id = json_decode($this->makeHttpRequest($url, json_encode($requestData), 'POST'));
+
+        $thread_id = $group_id->name;
+
+        //Add threads to users
+        $url = 'https://practera-notification.firebaseio.com/.json';
+
+        //Create post body
+        $post_body = '{
+                "groups/'.$thread_id.'/groupId" : "'.$thread_id.'",
+                "groups/'.$thread_id.'/createTime" : "'.time().'",';
+
+        foreach($requestData['members'] as $key => $val) {
+            $post_body = $post_body.'
+                "threads/'.$key.'/'.$thread_id.'/createdTime" : "'.time().'",
+                "threads/'.$key.'/'.$thread_id.'/displayName" : "'.$requestData['name'].'",
+                "threads/'.$key.'/'.$thread_id.'/threadId" : "'.$thread_id.'",
+                "threads/'.$key.'/'.$thread_id.'/timeStamp" : "'.time().'",
+                "threads/'.$key.'/'.$thread_id.'/type" : "Group",
+                "threads/'.$key.'/'.$thread_id.'/unseenCount" :  "0",
+                "threads/'.$key.'/'.$thread_id.'/groupId" : "'.$thread_id.'",';
+        }
+
+        $post_body = $post_body.'"groups/'.$thread_id.'/updateTime" : "'.time().'"
+            }';
+
+
+        return $this->makeHttpRequest($url, $post_body, 'PATCH');
+
+    }
+
+    /**
+     * @param $url
+     * @param $body
+     * @param $method
+     * @return mixed|string
+     */
     public function makeHttpRequest ($url, $body, $method) {
         $curl = curl_init();
         curl_setopt_array($curl, array(

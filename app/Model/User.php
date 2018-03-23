@@ -71,7 +71,7 @@ class User extends AppModel
 
     /**
      * This is to find a user by his/her email
-     * @param $email email address to be searched
+     * @param $email string email address to be searched
      * @return mixed user found in the db (might return null)
      */
     public function findUserByEmail ($email) {
