@@ -5,6 +5,8 @@ App::uses('User', 'Model');
 App::uses('FirebaseComponent', 'Controller/Component');
 App::uses('JWTokenComponent', 'Controller/Component');
 
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT');
 
 class UsersController extends AppController
 {
