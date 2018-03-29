@@ -103,7 +103,7 @@ class UsersController extends AppController
      * @param null $id user id to be updated
      * @return string
      */
-    public function edit($id = null) {
+    public function edit() {
 
         $this->response->type('json');
         $this->autoRender = false;

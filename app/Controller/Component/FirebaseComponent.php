@@ -142,11 +142,29 @@ class FirebaseComponent {
 
     public function editGroup ($requestData) {
 
+        $url = 'https://practera-notification.firebaseio.com/groups/'.$requestData->group_id.'.json';
+
+        $group = json_decode($this->makeHttpRequest($url, '', 'GET'));
+
+        if (empty($group)) {
+            return null;
+        }
+
+        $adminIds = array_keys($group->members, "admin", false);
+        $userIds = array_keys($group->members, "member", false);
+
+        foreach ($adminIds as $adminId) {
+            array_push($userIds, $adminId);
+        }
+
         $url = 'https://practera-notification.firebaseio.com/.json';
 
         $body = '{';
         if (isset($requestData->name)){
-            $body = $body.'"groups/'.$requestData->group_id.'/updateTime" : "'.$requestData->name.'",';
+            $body = $body.'"groups/'.$requestData->group_id.'/name" : "'.$requestData->name.'",';
+            foreach ($userIds as $userId) {
+                $body = $body.'"threads/'.$userId.'/'.$requestData->group_id.'/displayName" : "'.$requestData->name.'",';
+            }
         }
         if (isset($requestData->image)){
             $body = $body.'"groups/'.$requestData->group_id.'/image" : "'.$requestData->image.'",';
@@ -154,7 +172,7 @@ class FirebaseComponent {
         $body = $body.'"groups/'.$requestData->group_id.'/updateTime" : "'.time().'"
         }';
 
-        $this->makeHttpRequest($url, $body, 'PATCH');
+        return $this->makeHttpRequest($url, $body, 'PATCH');
     }
 
 
