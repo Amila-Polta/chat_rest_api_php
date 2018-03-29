@@ -65,7 +65,7 @@ class FirebaseComponent {
                 "threads/'.$key.'/'.$thread_id.'/createdTime" : "'.time().'",
                 "threads/'.$key.'/'.$thread_id.'/displayName" : "'.$requestData['name'].'",
                 "threads/'.$key.'/'.$thread_id.'/threadId" : "'.$thread_id.'",
-                "threads/'.$key.'/'.$thread_id.'/timeStamp" : "'.time().'",
+                "threads/'.$key.'/'.$thread_id.'/timeStamp" : "-'.time().'",
                 "threads/'.$key.'/'.$thread_id.'/type" : "Group",
                 "threads/'.$key.'/'.$thread_id.'/unseenCount" :  "0",
                 "threads/'.$key.'/'.$thread_id.'/groupId" : "'.$thread_id.'",';
@@ -98,25 +98,25 @@ class FirebaseComponent {
 
         //Create post body
         $post_body = '{
-                "messages/'.$loggedUserId.'/'.$message_id.'/messageId" : "'.$message_id.'",
-                "messages/'.$loggedUserId.'/'.$message_id.'/senderId" : "'.$loggedUserId.'",
-                "messages/'.$loggedUserId.'/'.$message_id.'/text" : "'.$messageText.'",
-                "messages/'.$loggedUserId.'/'.$message_id.'/timeStamp" : "'.time().'",
-                "messages/'.$loggedUserId.'/'.$message_id.'/type" : "text",';
+                "messages/'.$loggedUserId.'/'.$threadId.'/'.$message_id.'/messageId" : "'.$message_id.'",
+                "messages/'.$loggedUserId.'/'.$threadId.'/'.$message_id.'/senderId" : "'.$loggedUserId.'",
+                "messages/'.$loggedUserId.'/'.$threadId.'/'.$message_id.'/text" : "'.$messageText.'",
+                "messages/'.$loggedUserId.'/'.$threadId.'/'.$message_id.'/timeStamp" : "'.time().'",
+                "messages/'.$loggedUserId.'/'.$threadId.'/'.$message_id.'/type" : "text",';
 
         foreach ($requssetData->recipient as $userId) {
-                $post_body = $post_body.'"messages/'.$userId.'/'.$message_id.'/messageId" : "'.$message_id.'",
-                "messages/'.$userId.'/'.$message_id.'/senderId" : "'.$loggedUserId.'",
-                "messages/'.$userId.'/'.$message_id.'/text" : "'.$messageText.'",
-                "messages/'.$userId.'/'.$message_id.'/timeStamp" : "'.time().'",
-                "messages/'.$userId.'/'.$message_id.'/type" : "text",
-                "threads/'.$userId.'/'.$threadId.'/timeStamp" : "'.time().'",
+                $post_body = $post_body.'"messages/'.$userId.'/'.$threadId.'/'.$message_id.'/messageId" : "'.$message_id.'",
+                "messages/'.$userId.'/'.$threadId.'/'.$message_id.'/senderId" : "'.$loggedUserId.'",
+                "messages/'.$userId.'/'.$threadId.'/'.$message_id.'/text" : "'.$messageText.'",
+                "messages/'.$userId.'/'.$threadId.'/'.$message_id.'/timeStamp" : "'.time().'",
+                "messages/'.$userId.'/'.$threadId.'/'.$message_id.'/type" : "text",
+                "threads/'.$userId.'/'.$threadId.'/timeStamp" : "-'.time().'",
                 "threads/'.$userId.'/'.$threadId.'/lastMessage" : "'.$messageText.'",
                 "threads/'.$userId.'/'.$threadId.'/senderId" : "'.$loggedUserId.'",
                 "threads/'.$userId.'/'.$threadId.'/unseenCount" : "1",';
         }
 
-        $post_body = $post_body.'"threads/'.$loggedUserId.'/'.$threadId.'/timeStamp" : "'.time().'",
+        $post_body = $post_body.'"threads/'.$loggedUserId.'/'.$threadId.'/timeStamp" : "-'.time().'",
                 "threads/'.$loggedUserId.'/'.$threadId.'/lastMessage" : "'.$messageText.'",
                 "threads/'.$loggedUserId.'/'.$threadId.'/senderId" : "'.$loggedUserId.'",
                 "threads/'.$loggedUserId.'/'.$threadId.'/unseenCount" : "0"
@@ -124,6 +124,37 @@ class FirebaseComponent {
 
         return $this->makeHttpRequest($url, $post_body, 'PATCH');
 
+    }
+
+
+    public function removeUserFromGroup ($userId, $requestData) {
+
+        $url = 'https://practera-notification.firebaseio.com/.json';
+
+        $post_body = '{
+            "groups/'.$requestData->group_id.'/members" : '.json_encode($requestData->members).',
+            "messages/'.$userId.'/'.$requestData->group_id.'" : {},
+            "threads/'.$userId.'/'.$requestData->group_id.'" : {}
+        }';
+
+        return $this->makeHttpRequest($url, $post_body, 'PATCH');
+    }
+
+    public function editGroup ($requestData) {
+
+        $url = 'https://practera-notification.firebaseio.com/.json';
+
+        $body = '{';
+        if (isset($requestData->name)){
+            $body = $body.'"groups/'.$requestData->group_id.'/updateTime" : "'.$requestData->name.'",';
+        }
+        if (isset($requestData->image)){
+            $body = $body.'"groups/'.$requestData->group_id.'/image" : "'.$requestData->image.'",';
+        }
+        $body = $body.'"groups/'.$requestData->group_id.'/updateTime" : "'.time().'"
+        }';
+
+        $this->makeHttpRequest($url, $body, 'PATCH');
     }
 
     /**

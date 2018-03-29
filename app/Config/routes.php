@@ -36,6 +36,12 @@ Router::connect('/users/login', array('controller' => 'users', 'action' => 'logi
 Router::connect('/users/create', array('controller' => 'users', 'action' => 'createOneToOneChat', 'method' => 'POST'));
 Router::connect('/users/group', array('controller' => 'users', 'action' => 'createGroupChat', 'method' => 'POST'));
 Router::connect('/users/message', array('controller' => 'users', 'action' => 'sendMessage', 'method' => 'POST'));
+Router::connect('/users/self', array('controller' => 'users', 'action' => 'getSelf', 'method' => 'GET'));
+Router::connect('/users/update', array('controller' => 'users', 'action' => 'edit', 'method' => 'POST'));
+Router::connect('/users/logout', array('controller' => 'users', 'action' => 'logout', 'method' => 'POST'));
+Router::connect('/users/group/leave/self', array('controller' => 'users', 'action' => 'leaveGroup', 'method' => 'POST'));
+Router::connect('/users/group/remove', array('controller' => 'users', 'action' => 'removeUserFromGroup', 'method' => 'POST'));
+Router::connect('/users/group/edit', array('controller' => 'users', 'action' => 'editGroup', 'method' => 'POST'));
 
 
 

@@ -110,7 +110,6 @@ class User extends AppModel
     public function transferUserDataToUpdate ($userFromDb, $userFromReq) {
 
         $userFromReq->id = $userFromDb['User']['id'];
-        $userFromReq->push_token = $userFromDb['User']['push_token'];
         $userFromReq->auth_token = $userFromDb['User']['auth_token'];
 
         //Have first name to update
@@ -125,10 +124,10 @@ class User extends AppModel
         //Have last name to update
         if (isset($userFromReq->last_name)){
             if (empty($userFromReq->last_name)){
-                $userFromReq->first_name = $userFromDb['User']['last_name'];
+                $userFromReq->last_name = $userFromDb['User']['last_name'];
             }
         } else {
-            $userFromReq->first_name = $userFromDb['User']['last_name'];
+            $userFromReq->last_name = $userFromDb['User']['last_name'];
         }
 
         //Have password to update
@@ -151,6 +150,15 @@ class User extends AppModel
             $userFromReq->image_url = $userFromDb['User']['image_url'];
         }
 
+        //Have push token to update
+        if (isset($userFromReq->push_token)){
+            if (empty($userFromReq->push_token)){
+                $userFromReq->push_token = $userFromDb['User']['push_token'];
+            }
+        } else {
+            $userFromReq->push_token = $userFromDb['User']['push_token'];
+        }
+
         return $userFromReq;
     }
 
@@ -159,6 +167,13 @@ class User extends AppModel
         return $this->find('first', array(
             'conditions'=>array('auth_token'=>$token)
         ));
+    }
+
+    public function findUsersFromIds ($ids) {
+        return $this->find('all',
+            array('conditions' => array(
+                'id' => $ids
+            )));
     }
 
 }

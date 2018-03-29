@@ -7,7 +7,7 @@ App::uses('JWTokenComponent', 'Controller/Component');
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT');
-
+header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, X-AUTH-TOKEN");
 class UsersController extends AppController
 {
 
@@ -20,7 +20,11 @@ class UsersController extends AppController
     public function authenticateUser($headers) {
 
         //get auth token from headers
-        $authToken = $headers['X-AUTH-TOKEN'];
+        try{
+            $authToken = $headers['X-AUTH-TOKEN'];
+        } catch (Exception $e){
+            return null;
+        }
 
         if (empty($authToken)){
             return null;
@@ -66,6 +70,7 @@ class UsersController extends AppController
 
                 $this->User->create();
                 if ($this->User->save($user)) {
+                    $user->password = "";
                     return json_encode(
                         array(
                             'message' => "User added",
@@ -122,7 +127,7 @@ class UsersController extends AppController
         $user = $this->User->transferUserDataToUpdate($loggedInUser, $update);
 
 
-        if ($this->request->is(array('user', 'put'))) {
+        if ($this->request->is(array('user', 'post'))) {
             if ($this->User->save($user)) {
                 //User updated response
                 return json_encode(
@@ -265,12 +270,20 @@ class UsersController extends AppController
             );
         }
 
-        $users = $this->User->find('all',['fields' => ['id','first_name','last_name','email','image_url']]);
+        $users = $this->User->find('all',['fields' => ['id','first_name','last_name','email','image_url', 'user_type'],
+            'order'=>array('first_name ASC', 'last_name ASC'),
+            'conditions'=>array('id !='=>$loggedInUser['User']['id'])]);
+
+        function getUsers($users){
+            return $users['User'];
+        }
+
+        $userList = array_map('getUsers', $users);
 
         return json_encode(
             array(
                 'message' => 'User list',
-                'data' => $users
+                'data' => $userList
             )
         );
     }
@@ -389,8 +402,202 @@ class UsersController extends AppController
         }
 
         $fc = new FirebaseComponent();
-        return $fc->sendMessage($loggedInUser, $requestData);
+        $response = $fc->sendMessage($loggedInUser, $requestData);
+
+        $background = new Background('sendPushNotification', [$requestData, $loggedInUser]);
+        $background->start();
+        $background->join();
+
+        return $response;
     }
 
+
+    public function getSelf(){
+
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        return json_encode(
+            array(
+                'message' => 'Your profile',
+                'data' => $loggedInUser['User']
+            )
+        );
+
+    }
+
+
+    public function logout(){
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+
+        //Update User
+        $user = $loggedInUser['User'];
+        $user['auth_token'] = "" ;
+        if (!$this->User->save($user)) {
+            //Error in update user response
+            $this->response->statusCode(500);
+            return json_encode(
+                array(
+                    'message' => "User was not updated",
+                    'data' => null
+                ));
+        }
+
+        return json_encode(
+            array(
+                'message' => "User logged out",
+                'data' => null
+            ));
+
+    }
+
+
+    public function sendPushNotification($requestData, $loggedInUser){
+        $spn = new SendPushNotification();
+
+        $userList = $this->User->findUsersFromIds($requestData->recipient);
+
+
+        function getUsersPushTokens($userList){
+            if (!empty($userList['User']['push_token'])) {
+                return $userList['User']['push_token'];
+            }
+        }
+
+        $pushTokens = array_map('getUsers', $userList);
+
+
+        if ($requestData->message_type === 'Private'){
+            $spn->sendPushNotificationPrivate($requestData, $loggedInUser, $pushTokens);
+        } else if ($requestData->message_type === 'Group'){
+            $spn->sendPushNotificationGroup($requestData, $pushTokens);
+        }
+
+    }
+
+    public function leaveGroup(){
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $fc = new FirebaseComponent();
+        return $fc->removeUserFromGroup($loggedInUser['User']['id'], $requestData);
+    }
+
+
+    public function removeUserFromGroup(){
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $fc = new FirebaseComponent();
+        return $fc->removeUserFromGroup($requestData->removed_user_id, $requestData);
+    }
+
+
+    public function editGroup(){
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $fc = new FirebaseComponent();
+
+        return $fc->editGroup($requestData);
+    }
 
 }
