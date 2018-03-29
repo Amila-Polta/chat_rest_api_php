@@ -600,4 +600,82 @@ class UsersController extends AppController
         return $fc->editGroup($requestData);
     }
 
+    public function addUserToGroup (){
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $fc = new FirebaseComponent();
+
+        return $fc->addPeopleToGroup($requestData);
+
+    }
+
+    public function listUserByIds() {
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $users = $this->User->findUsersFromIds($requestData->ids);
+
+        function getUsers($users){
+            return $users['User'];
+        }
+
+        $userList = array_map('getUsers', $users);
+
+        return json_encode(
+            array(
+                'message' => 'User list',
+                'data' => $userList
+            )
+        );
+    }
+
 }

@@ -157,6 +157,27 @@ class FirebaseComponent {
         $this->makeHttpRequest($url, $body, 'PATCH');
     }
 
+
+    public function addPeopleToGroup ($requestData) {
+
+        $userId = $requestData->user_id;
+        $thread_id = $requestData->thread_id;
+        $url = 'https://practera-notification.firebaseio.com/.json';
+
+        $post_body = '{
+                "threads/'.$userId.'/'.$thread_id.'/createdTime" : "'.time().'",
+                "threads/'.$userId.'/'.$thread_id.'/displayName" : "'.$requestData->name.'",
+                "threads/'.$userId.'/'.$thread_id.'/threadId" : "'.$thread_id.'",
+                "threads/'.$userId.'/'.$thread_id.'/timeStamp" : "-'.time().'",
+                "threads/'.$userId.'/'.$thread_id.'/type" : "Group",
+                "threads/'.$userId.'/'.$thread_id.'/unseenCount" :  "0",
+                "threads/'.$userId.'/'.$thread_id.'/groupId" : "'.$thread_id.'",
+                "groups/'.$thread_id.'/members" : '.$requestData->members.'
+        }';
+
+        return $this->makeHttpRequest($url, $post_body, 'PATCH');
+    }
+
     /**
      * @param $url
      * @param $body

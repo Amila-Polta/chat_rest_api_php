@@ -42,6 +42,9 @@ Router::connect('/users/logout', array('controller' => 'users', 'action' => 'log
 Router::connect('/users/group/leave/self', array('controller' => 'users', 'action' => 'leaveGroup', 'method' => 'POST'));
 Router::connect('/users/group/remove', array('controller' => 'users', 'action' => 'removeUserFromGroup', 'method' => 'POST'));
 Router::connect('/users/group/edit', array('controller' => 'users', 'action' => 'editGroup', 'method' => 'POST'));
+Router::connect('/users/group/add', array('controller' => 'users', 'action' => 'addUserToGroup', 'method' => 'POST'));
+Router::connect('/users/list', array('controller' => 'users', 'action' => 'listUserByIds', 'method' => 'POST'));
+
 
 
 
