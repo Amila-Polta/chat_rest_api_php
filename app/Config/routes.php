@@ -44,6 +44,7 @@ Router::connect('/users/group/remove', array('controller' => 'users', 'action' =
 Router::connect('/users/group/edit', array('controller' => 'users', 'action' => 'editGroup', 'method' => 'POST'));
 Router::connect('/users/group/add', array('controller' => 'users', 'action' => 'addUserToGroup', 'method' => 'POST'));
 Router::connect('/users/list', array('controller' => 'users', 'action' => 'listUserByIds', 'method' => 'POST'));
+Router::connect('/users/list/other', array('controller' => 'users', 'action' => 'getListUserNotInGroup', 'method' => 'POST'));
 
 
 

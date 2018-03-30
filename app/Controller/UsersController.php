@@ -3,6 +3,7 @@
 App::uses('AppController', 'Controller');
 App::uses('User', 'Model');
 App::uses('FirebaseComponent', 'Controller/Component');
+App::uses('SendPushNotification', 'Controller/Component');
 App::uses('JWTokenComponent', 'Controller/Component');
 
 header('Access-Control-Allow-Origin: *');
@@ -404,9 +405,11 @@ class UsersController extends AppController
         $fc = new FirebaseComponent();
         $response = $fc->sendMessage($loggedInUser, $requestData);
 
-        $background = new Background('sendPushNotification', [$requestData, $loggedInUser]);
-        $background->start();
-        $background->join();
+//        $background = new Background('sendPushNotification', [$requestData, $loggedInUser]);
+//        $background->start();
+//        $background->join();
+
+        $this->sendPushNotification($requestData, $loggedInUser);
 
         return $response;
     }
@@ -490,7 +493,7 @@ class UsersController extends AppController
             }
         }
 
-        $pushTokens = array_map('getUsers', $userList);
+        $pushTokens = array_map('getUsersPushTokens', $userList);
 
 
         if ($requestData->message_type === 'Private'){
@@ -663,6 +666,117 @@ class UsersController extends AppController
         }
 
         $users = $this->User->findUsersFromIds($requestData->ids);
+
+        function getUsers($users){
+            return $users['User'];
+        }
+
+        $userList = array_map('getUsers', $users);
+
+        return json_encode(
+            array(
+                'message' => 'User list',
+                'data' => $userList
+            )
+        );
+    }
+
+    public function createHelpDeskChat () {
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $fc = new FirebaseComponent();
+
+        return $fc->createHelpDeskChat($loggedInUser);
+
+    }
+
+    public function sendMessageHelpDesk () {
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $fc = new FirebaseComponent();
+
+        return $fc->sendHelpDeskMessage($requestData, $loggedInUser);
+    }
+
+    public function getListUserNotInGroup () {
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $users = $this->User->findUsersNotFromIds($requestData->ids);
 
         function getUsers($users){
             return $users['User'];

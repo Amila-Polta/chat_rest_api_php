@@ -176,4 +176,11 @@ class User extends AppModel
             )));
     }
 
+    public function findUsersNotFromIds ($ids) {
+        return $this->find('all',
+            array('conditions' => array(
+                'id !=' => $ids
+            )));
+    }
+
 }

@@ -16,7 +16,7 @@ class SendPushNotification {
                 "body" : "'.$requestData->text.'",
                 "tag" : "'.$requestData->thread_id.'"
                 },
-            "registration_ids" : '.$pushTokens.'
+            "registration_ids" : '.json_encode($pushTokens).'
             }';
 
         $this->sendNotifications($notification);
@@ -30,7 +30,7 @@ class SendPushNotification {
                 "body" : "'.$requestData->text.'",
                 "tag" : "'.$requestData->thread_id.'"
                 },
-            "registration_ids" : '.$pushTokens.'
+            "registration_ids" : '.json_encode($pushTokens).'
             }';
 
         $this->sendNotifications($notification);
