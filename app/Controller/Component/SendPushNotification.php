@@ -14,7 +14,6 @@ class SendPushNotification {
             "notification" : {
                 "title" : "'.$loggedInUser['User']['first_name'].' '.$loggedInUser['User']['last_name'].'",
                 "body" : "'.$requestData->text.'",
-                "tag" : "'.$requestData->thread_id.'",
                 "click_action":"FCM_PLUGIN_ACTIVITY"
                 },
             "data" : {
@@ -32,7 +31,6 @@ class SendPushNotification {
             "notification" : {
                 "title" : "You have a new message",
                 "body" : "'.$requestData->text.'",
-                "tag" : "'.$requestData->thread_id.'",
                 "click_action":"FCM_PLUGIN_ACTIVITY"
                 },
             "data" : {
@@ -50,7 +48,6 @@ class SendPushNotification {
             "notification" : {
                 "title" : "New Chat Group",
                 "body" : "You have been added to a new chat group..",
-                "tag" : "'.$thread_id.'",
                 "click_action":"FCM_PLUGIN_ACTIVITY"
                 },
             "data" : {
@@ -69,12 +66,12 @@ class SendPushNotification {
             $notification = '{
             "notification" : {
                 "title" : "New help desk Message",
-                "body" : "You got an message from help desk",
-                "tag" : "' . $requestData->thread_id . '",
+                "body" : "You got a message from help desk",
                 "click_action":"FCM_PLUGIN_ACTIVITY"
                 },
             "data" : {
-                "tag" : "' . $requestData->thread_id . '"
+                "tag" : "' . $requestData->thread_id . ' HelpDesk",
+                "type" : "HelpDesk"
                 },
             "registration_ids" : ' . json_encode($pushTokens) . '
             }';
@@ -84,12 +81,12 @@ class SendPushNotification {
             $notification = '{
             "notification" : {
                 "title" : "New message",
-                "body" : "You got an message from a user",
-                "tag" : "' . $requestData->thread_id . '",
+                "body" : "You got a message from an user",
                 "click_action":"FCM_PLUGIN_ACTIVITY"
                 },
             "data" : {
-                "tag" : "' . $requestData->thread_id . '"
+                "tag" : "' . $requestData->thread_id . ' HelpDesk",
+                "type" : "HelpDesk"
                 },
             "registration_ids" : ' . json_encode($pushTokens) . '
             }';

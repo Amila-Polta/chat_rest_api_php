@@ -90,6 +90,29 @@ class FirebaseComponent {
 
     public function sendMessage ($loggedUser, $requestData) {
 
+//        if ($requestData->message_type === 'Group') {
+//            $url = 'https://practera-notification.firebaseio.com/groups/' . $requestData->threadId . '.json';
+//
+//            $group = json_decode($this->makeHttpRequest($url, '', 'GET'), true);
+//
+//            if (empty($group)) {
+//                return null;
+//            }
+//
+//            $adminIds = array_keys($group['members'], "admin", false);
+//            $userIds = array_keys($group['members'], "member", false);
+//
+//            foreach ($adminIds as $adminId) {
+//                array_push($userIds, $adminId);
+//            }
+//
+//
+//            $key = array_search($loggedUser['User']['id'], $userIds);
+//
+//
+//
+//        }
+
         $loggedUserId = $loggedUser['User']['id'];
         $threadId = $requestData->thread_id;
         $messageText = $requestData->text;
@@ -401,7 +424,15 @@ class FirebaseComponent {
                 array_push($userIds, $adminId);
             }
 
+
             $key = array_search($loggedInUserId, $userIds);
+            if ($key === 0){
+                if (empty($userIds[$key])){
+                    return null;
+                }
+            } else if (empty($key)){
+                return null;
+            }
             unset($userIds[$key]);
             return $userIds;
         }

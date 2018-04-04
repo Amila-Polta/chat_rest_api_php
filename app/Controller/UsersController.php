@@ -439,7 +439,17 @@ class UsersController extends AppController
         $fc = new FirebaseComponent();
 
         if ($requestData->message_type === 'Group') {
-            $requestData->recipient = $fc->getOtherUsersInThread($requestData->message_type, $requestData->thread_id, $loggedInUser);
+            $recipient = $fc->getOtherUsersInThread($requestData->message_type, $requestData->thread_id, $loggedInUser);
+            if (empty($recipient)){
+                $this->response->statusCode(400);
+                return json_encode(
+                    array(
+                        'message' => 'This user is not in group',
+                        'data' => null
+                    )
+                );
+            }
+            $requestData->recipient = $recipient;
         }
 
         $response = $fc->sendMessage($loggedInUser, $requestData);
