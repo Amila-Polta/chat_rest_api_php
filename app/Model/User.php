@@ -111,6 +111,8 @@ class User extends AppModel
 
         $userFromReq->id = $userFromDb['User']['id'];
         $userFromReq->auth_token = $userFromDb['User']['auth_token'];
+        $userFromReq->user_type = $userFromDb['User']['user_type'];
+        $userFromReq->email = $userFromDb['User']['email'];
 
         //Have first name to update
         if (isset($userFromReq->first_name)){
@@ -179,7 +181,15 @@ class User extends AppModel
     public function findUsersNotFromIds ($ids) {
         return $this->find('all',
             array('conditions' => array(
-                'id !=' => $ids
+                'id !=' => $ids,
+                'user_type !=' => 'Admin'
+            )));
+    }
+
+    public function getAdmins(){
+        return $this->find('all',
+            array('conditions' => array(
+                'user_type' => 'Admin'
             )));
     }
 

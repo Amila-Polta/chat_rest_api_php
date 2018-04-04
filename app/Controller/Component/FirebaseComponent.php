@@ -1,6 +1,6 @@
 <?php
 
-
+App::uses('SendPushNotification', 'Controller/Component');
 
 class FirebaseComponent {
 
@@ -27,6 +27,7 @@ class FirebaseComponent {
                 "'.$uOneId.'/'.$thread_id.'/createdTime" : "'.time().'",
                 "'.$uOneId.'/'.$thread_id.'/displayName" : "'.$userTwo['User']['first_name'].' '.$userTwo['User']['last_name'].'",
                 "'.$uOneId.'/'.$thread_id.'/threadId" : "'.$thread_id.'",
+                "'.$uOneId.'/'.$thread_id.'/image" : "http://moorehumane.org/wp-content/uploads/2016/06/avatar-male.jpg",
                 "'.$uOneId.'/'.$thread_id.'/timeStamp" : "'.time().'",
                 "'.$uOneId.'/'.$thread_id.'/type" : "Private",
                 "'.$uOneId.'/'.$thread_id.'/unseenCount" :  "0",
@@ -34,6 +35,7 @@ class FirebaseComponent {
                 "'.$uTwoId.'/'.$thread_id.'/createdTime" : "'.time().'",
                 "'.$uTwoId.'/'.$thread_id.'/displayName" : "'.$userOne['User']['first_name'].' '.$userOne['User']['last_name'].'",
                 "'.$uTwoId.'/'.$thread_id.'/threadId" : "'.$thread_id.'",
+                "'.$uTwoId.'/'.$thread_id.'/image" : "http://moorehumane.org/wp-content/uploads/2016/06/avatar-male.jpg",
                 "'.$uTwoId.'/'.$thread_id.'/timeStamp" : "'.time().'",
                 "'.$uTwoId.'/'.$thread_id.'/type" :  "Private",
                 "'.$uTwoId.'/'.$thread_id.'/unseenCount" :  "0",
@@ -44,7 +46,7 @@ class FirebaseComponent {
     }
 
 
-    public function createGroupThreads ($requestData) {
+    public function createGroupThreads ($requestData, $pushTokens) {
 
         //Generate group
         $url = 'https://practera-notification.firebaseio.com/groups.json';
@@ -58,6 +60,7 @@ class FirebaseComponent {
         //Create post body
         $post_body = '{
                 "groups/'.$thread_id.'/groupId" : "'.$thread_id.'",
+                "groups/'.$thread_id.'/image" : "http://guguia.net/wp-content/plugins/wp-recall/add-on/groups/img/group-avatar.png",
                 "groups/'.$thread_id.'/createTime" : "'.time().'",';
 
         foreach($requestData['members'] as $key => $val) {
@@ -65,7 +68,8 @@ class FirebaseComponent {
                 "threads/'.$key.'/'.$thread_id.'/createdTime" : "'.time().'",
                 "threads/'.$key.'/'.$thread_id.'/displayName" : "'.$requestData['name'].'",
                 "threads/'.$key.'/'.$thread_id.'/threadId" : "'.$thread_id.'",
-                "threads/'.$key.'/'.$thread_id.'/timeStamp" : "-'.time().'",
+                "threads/'.$key.'/'.$thread_id.'/image" : "http://guguia.net/wp-content/plugins/wp-recall/add-on/groups/img/group-avatar.png",
+                "threads/'.$key.'/'.$thread_id.'/timeStamp" : "'.time().'",
                 "threads/'.$key.'/'.$thread_id.'/type" : "Group",
                 "threads/'.$key.'/'.$thread_id.'/unseenCount" :  "0",
                 "threads/'.$key.'/'.$thread_id.'/groupId" : "'.$thread_id.'",';
@@ -74,16 +78,21 @@ class FirebaseComponent {
         $post_body = $post_body.'"groups/'.$thread_id.'/updateTime" : "'.time().'"
             }';
 
+        $response = $this->makeHttpRequest($url, $post_body, 'PATCH');
 
-        return $this->makeHttpRequest($url, $post_body, 'PATCH');
+        $spn = new SendPushNotification();
+
+        $spn->sendPushNotificationCreateGroup($requestData, $thread_id, $pushTokens);
+
+        return $response;
 
     }
 
-    public function sendMessage ($loggedUser, $requssetData) {
+    public function sendMessage ($loggedUser, $requestData) {
 
         $loggedUserId = $loggedUser['User']['id'];
-        $threadId = $requssetData->thread_id;
-        $messageText = $requssetData->text;
+        $threadId = $requestData->thread_id;
+        $messageText = $requestData->text;
 
         //Create message id
         $url = 'https://practera-notification.firebaseio.com/messages/'.$loggedUserId.'/'.$threadId.'/.json';
@@ -103,7 +112,7 @@ class FirebaseComponent {
                 "messages/'.$loggedUserId.'/'.$threadId.'/'.$message_id.'/timeStamp" : "'.time().'",
                 "messages/'.$loggedUserId.'/'.$threadId.'/'.$message_id.'/type" : "text",';
 
-        foreach ($requssetData->recipient as $userId) {
+        foreach ($requestData->recipient as $userId) {
 
             $url = 'https://practera-notification.firebaseio.com/threads/'.$userId.'/'.$threadId.'.json';
 
@@ -114,16 +123,16 @@ class FirebaseComponent {
                 "messages/'.$userId.'/'.$threadId.'/'.$message_id.'/text" : "'.$messageText.'",
                 "messages/'.$userId.'/'.$threadId.'/'.$message_id.'/timeStamp" : "'.time().'",
                 "messages/'.$userId.'/'.$threadId.'/'.$message_id.'/type" : "text",
-                "threads/'.$userId.'/'.$threadId.'/timeStamp" : "-'.time().'",
+                "threads/'.$userId.'/'.$threadId.'/timeStamp" : "'.time().'",
                 "threads/'.$userId.'/'.$threadId.'/lastMessage" : "'.$messageText.'",
                 "threads/'.$userId.'/'.$threadId.'/senderId" : "'.$loggedUserId.'",
-                "threads/'.$userId.'/'.$threadId.'/unseenCount" : '.($thread->unseenCount +1).',';
+                "threads/'.$userId.'/'.$threadId.'/unseenCount" : "'.($thread->unseenCount +1).'",';
         }
 
-        $post_body = $post_body.'"threads/'.$loggedUserId.'/'.$threadId.'/timeStamp" : "-'.time().'",
+        $post_body = $post_body.'"threads/'.$loggedUserId.'/'.$threadId.'/timeStamp" : "'.time().'",
                 "threads/'.$loggedUserId.'/'.$threadId.'/lastMessage" : "'.$messageText.'",
                 "threads/'.$loggedUserId.'/'.$threadId.'/senderId" : "'.$loggedUserId.'",
-                "threads/'.$loggedUserId.'/'.$threadId.'/unseenCount" : 0
+                "threads/'.$loggedUserId.'/'.$threadId.'/unseenCount" : "0"
                 }';
 
         $url = 'https://practera-notification.firebaseio.com/.json';
@@ -150,14 +159,14 @@ class FirebaseComponent {
 
         $url = 'https://practera-notification.firebaseio.com/groups/'.$requestData->group_id.'.json';
 
-        $group = json_decode($this->makeHttpRequest($url, '', 'GET'));
+        $group = json_decode($this->makeHttpRequest($url, '', 'GET'), true);
 
         if (empty($group)) {
             return null;
         }
 
-        $adminIds = array_keys($group->members, "admin", false);
-        $userIds = array_keys($group->members, "member", false);
+        $adminIds = array_keys($group['members'], "admin", false);
+        $userIds = array_keys($group['members'], "member", false);
 
         foreach ($adminIds as $adminId) {
             array_push($userIds, $adminId);
@@ -169,7 +178,8 @@ class FirebaseComponent {
         if (isset($requestData->name)){
             $body = $body.'"groups/'.$requestData->group_id.'/name" : "'.$requestData->name.'",';
             foreach ($userIds as $userId) {
-                $body = $body.'"threads/'.$userId.'/'.$requestData->group_id.'/displayName" : "'.$requestData->name.'",';
+                $body = $body.'"threads/'.$userId.'/'.$requestData->group_id.'/displayName" : "'.$requestData->name.'",
+                "threads/'.$userId.'/'.$requestData->group_id.'/image" : "http://guguia.net/wp-content/plugins/wp-recall/add-on/groups/img/group-avatar.png",';
             }
         }
         if (isset($requestData->image)){
@@ -193,7 +203,7 @@ class FirebaseComponent {
             $post_body = $post_body.'"threads/'.$userId.'/'.$thread_id.'/createdTime" : "'.time().'",
                 "threads/'.$userId.'/'.$thread_id.'/displayName" : "'.$requestData->name.'",
                 "threads/'.$userId.'/'.$thread_id.'/threadId" : "'.$thread_id.'",
-                "threads/'.$userId.'/'.$thread_id.'/timeStamp" : "-'.time().'",
+                "threads/'.$userId.'/'.$thread_id.'/timeStamp" : "'.time().'",
                 "threads/'.$userId.'/'.$thread_id.'/type" : "Group",
                 "threads/'.$userId.'/'.$thread_id.'/unseenCount" :  "0",
                 "threads/'.$userId.'/'.$thread_id.'/groupId" : "'.$thread_id.'",';
@@ -216,8 +226,9 @@ class FirebaseComponent {
         $post_body = '{
                 "threads/helpDesk/'.$userId.'/createdTime" : "'.time().'",
                 "threads/helpDesk/'.$userId.'/displayName" : "'.$name.'",
-                "threads/helpDesk/'.$userId.'/userId" : "'.$userId.'",
-                "threads/helpDesk/'.$userId.'/timeStamp" : "-'.time().'",
+                "threads/helpDesk/'.$userId.'/user" : "'.$userId.'",
+                "threads/helpDesk/'.$userId.'/threadId" : "'.$userId.'",
+                "threads/helpDesk/'.$userId.'/timeStamp" : "'.time().'",
                 "threads/helpDesk/'.$userId.'/type" : "Help Desk",
                 "threads/helpDesk/'.$userId.'/unseenCount" :  "0"
         }';
@@ -226,14 +237,21 @@ class FirebaseComponent {
 
     }
 
-    public function sendHelpDeskMessage($requestData, $loggedInUser){
+    public function sendHelpDeskMessage($requestData, $loggedInUser, $pushTokens){
         $userId = $requestData->thread_id;
+        $url = 'https://practera-notification.firebaseio.com/threads/helpDesk/'.$userId.'/.json';
+
+        $thread = json_decode($this->makeHttpRequest($url, '', 'GET'), true);
+
         $helpDeskCount = '0';
         $unseenCount = '0';
+        $type = '';
         if ($userId === $loggedInUser['User']['id']) {
-            $helpDeskCount = '1';
+            $helpDeskCount = $thread['helpDeskCount'] + 1 ;
+            $type = 'User';
         } else {
-            $unseenCount = '1';
+            $unseenCount = $thread['unseenCount'] + 1 ;
+            $type = 'HelpDesk';
         }
         //Create message id
         $url = 'https://practera-notification.firebaseio.com/messages/helpDesk/'.$userId.'/.json';
@@ -249,19 +267,83 @@ class FirebaseComponent {
 
         $post_body = '{
                 "threads/helpDesk/'.$userId.'/userId" : "'.$userId.'",
-                "threads/helpDesk/'.$userId.'/timeStamp" : "-'.time().'",
+                "threads/helpDesk/'.$userId.'/timeStamp" : "'.time().'",
                 "threads/helpDesk/'.$userId.'/lastMessage" : "'.$requestData->text.'",
                 "threads/helpDesk/'.$userId.'/senderId" : "'.$loggedInUser['User']['id'].'",
-                "threads/helpDesk/'.$userId.'/helpDeskCount" : '.$helpDeskCount.',
-                "threads/helpDesk/'.$userId.'/unseenCount" :  '.$unseenCount.',
+                "threads/helpDesk/'.$userId.'/helpDeskCount" : "'.$helpDeskCount.'",
+                "threads/helpDesk/'.$userId.'/unseenCount" :  "'.$unseenCount.'",
                 "messages/helpDesk/'.$userId.'/'.$message_id.'/messageId" : "'.$message_id.'",
                 "messages/helpDesk/'.$userId.'/'.$message_id.'/senderId" : "'.$loggedInUser['User']['id'].'",
                 "messages/helpDesk/'.$userId.'/'.$message_id.'/text" : "'.$requestData->text.'",
                 "messages/helpDesk/'.$userId.'/'.$message_id.'/timeStamp" : "'.time().'",
+                "messages/helpDesk/'.$userId.'/'.$message_id.'/from" : "'.$type.'",
                 "messages/helpDesk/'.$userId.'/'.$message_id.'/type" : "text"
         }';
 
-        return $this->makeHttpRequest($url, $post_body, 'PATCH');
+
+        $response = $this->makeHttpRequest($url, $post_body, 'PATCH');
+
+        $spn = new SendPushNotification();
+
+        $spn->sendPushNotificationHelpDesk($requestData, $loggedInUser, $pushTokens);
+
+        return $response;
+    }
+
+
+    public function deleteMessage($requestData, $loggedInUser){
+        $userIdList = [];
+        if ($requestData->message_type === 'Group'){
+            $url = 'https://practera-notification.firebaseio.com/groups/'.$requestData->thread_id.'.json';
+
+            $group = json_decode($this->makeHttpRequest($url, '', 'GET'), true);
+
+            if (empty($group)) {
+                return null;
+            }
+
+            $adminIds = array_keys($group['members'], "admin", false);
+            $userIds = array_keys($group['members'], "member", false);
+
+            foreach ($adminIds as $adminId) {
+                array_push($userIds, $adminId);
+            }
+            $userIdList = $userIds;
+        } else {
+            $userIdList = $requestData->user_ids;
+        }
+
+        $threadId = $requestData->thread_id;
+        $messageId = $requestData->message_id;
+
+
+        $url = 'https://practera-notification.firebaseio.com/.json';
+
+        $body = '{';
+        foreach ($userIdList as $userId) {
+
+            $body = $body.'"messages/'.$userId.'/'.$threadId.'/'.$messageId.'" : {},';
+        }
+
+        $body = $body.'"messages/'.$loggedInUser['User']['id'].'/'.$threadId.'/'.$messageId.'" : {}
+            }';
+
+        return $this->makeHttpRequest($url, $body, 'PATCH');
+    }
+
+    public function deleteConversation($requestData, $loggedInUser){
+
+
+        $url = 'https://practera-notification.firebaseio.com/.json';
+
+        $body = '{
+                "messages/'.$loggedInUser['User']['id'].'/'.$requestData->thread_id.'" : {},
+                "threads/'.$loggedInUser['User']['id'].'/'.$requestData->thread_id.'" : {},
+                "messages/'.$requestData->user_id.'/'.$requestData->thread_id.'" : {},
+                "threads/'.$requestData->user_id.'/'.$requestData->thread_id.'" : {}
+            }';
+
+        return $this->makeHttpRequest($url, $body, 'PATCH');
     }
 
     /**
@@ -296,6 +378,35 @@ class FirebaseComponent {
         } else {
             return $response;
         }
+    }
+
+
+    public function getOtherUsersInThread($message_type, $threadId, $loggedInUser){
+
+        $loggedInUserId = $loggedInUser['User']['id'];
+
+        if ($message_type === 'Group') {
+            $url = 'https://practera-notification.firebaseio.com/groups/' . $threadId . '.json';
+
+            $group = json_decode($this->makeHttpRequest($url, '', 'GET'), true);
+
+            if (empty($group)) {
+                return null;
+            }
+
+            $adminIds = array_keys($group['members'], "admin", false);
+            $userIds = array_keys($group['members'], "member", false);
+
+            foreach ($adminIds as $adminId) {
+                array_push($userIds, $adminId);
+            }
+
+            $key = array_search($loggedInUserId, $userIds);
+            unset($userIds[$key]);
+            return $userIds;
+        }
+
+
     }
 
 }

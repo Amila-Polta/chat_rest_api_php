@@ -45,6 +45,10 @@ Router::connect('/users/group/edit', array('controller' => 'users', 'action' => 
 Router::connect('/users/group/add', array('controller' => 'users', 'action' => 'addUserToGroup', 'method' => 'POST'));
 Router::connect('/users/list', array('controller' => 'users', 'action' => 'listUserByIds', 'method' => 'POST'));
 Router::connect('/users/list/other', array('controller' => 'users', 'action' => 'getListUserNotInGroup', 'method' => 'POST'));
+Router::connect('/users/message/delete', array('controller' => 'users', 'action' => 'deleteMessage', 'method' => 'POST'));
+Router::connect('/users/conversation/delete', array('controller' => 'users', 'action' => 'deleteConversation', 'method' => 'POST'));
+Router::connect('/users/helpdesk/create', array('controller' => 'users', 'action' => 'createHelpDeskChat', 'method' => 'POST'));
+Router::connect('/users/helpdesk/message', array('controller' => 'users', 'action' => 'sendMessageHelpDesk', 'method' => 'POST'));
 
 
 

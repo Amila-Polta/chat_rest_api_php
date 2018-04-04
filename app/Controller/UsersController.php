@@ -242,11 +242,13 @@ class UsersController extends AppController
                 ));
         }
 
+        $user = $this->User->findUserByAuthToken($token);
+
         //send the token with token
         return json_encode(
             array(
                 'message' => "User is logged in",
-                'data' => $user
+                'data' => $user['User']
             )
         );
     }
@@ -273,7 +275,7 @@ class UsersController extends AppController
 
         $users = $this->User->find('all',['fields' => ['id','first_name','last_name','email','image_url', 'user_type'],
             'order'=>array('first_name ASC', 'last_name ASC'),
-            'conditions'=>array('id !='=>$loggedInUser['User']['id'])]);
+            'conditions'=>array('id !='=>$loggedInUser['User']['id'], 'user_type !=' => 'Admin')]);
 
         function getUsers($users){
             return $users['User'];
@@ -368,8 +370,40 @@ class UsersController extends AppController
             );
         }
 
+        if (empty($requestData['members'])) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $adminIds = array_keys($requestData['members'], "admin", false);
+        $userIds = array_keys($requestData['members'], "member", false);
+
+        foreach ($adminIds as $adminId) {
+            array_push($userIds, $adminId);
+        }
+
+        $key = array_search($loggedInUser['User']['id'], $userIds);
+        unset($userIds[$key]);
+
+        $userList = $this->User->findUsersFromIds($userIds);
+
+
+        function getUsersPushTokens($userList){
+            if (!empty($userList['User']['push_token'])) {
+                return $userList['User']['push_token'];
+            }
+        }
+
+        $pushTokens = array_map('getUsersPushTokens', $userList);
+
+
         $fc = new FirebaseComponent();
-        return $fc->createGroupThreads($requestData);
+        return $fc->createGroupThreads($requestData, $pushTokens);
     }
 
 
@@ -403,6 +437,11 @@ class UsersController extends AppController
         }
 
         $fc = new FirebaseComponent();
+
+        if ($requestData->message_type === 'Group') {
+            $requestData->recipient = $fc->getOtherUsersInThread($requestData->message_type, $requestData->thread_id, $loggedInUser);
+        }
+
         $response = $fc->sendMessage($loggedInUser, $requestData);
 
 //        $background = new Background('sendPushNotification', [$requestData, $loggedInUser]);
@@ -462,6 +501,7 @@ class UsersController extends AppController
         //Update User
         $user = $loggedInUser['User'];
         $user['auth_token'] = "" ;
+        $user['push_token'] = "" ;
         if (!$this->User->save($user)) {
             //Error in update user response
             $this->response->statusCode(500);
@@ -743,9 +783,28 @@ class UsersController extends AppController
             );
         }
 
+        $pushTokens = Array();
+        if ($loggedInUser['User']['id'] === $requestData->thread_id){
+            $admins = $this->User->getAdmins();
+
+            function getUsersPushTokens($userList){
+                if (!empty($userList['User']['push_token'])) {
+                    return $userList['User']['push_token'];
+                }
+            }
+
+            $pushTokens = array_map('getUsersPushTokens', $admins);
+
+        } else {
+
+            $user = $this->User->findById($requestData->thread_id);
+            array_push($pushTokens, $user['User']['push_token']);
+        }
+
+
         $fc = new FirebaseComponent();
 
-        return $fc->sendHelpDeskMessage($requestData, $loggedInUser);
+        return $fc->sendHelpDeskMessage($requestData, $loggedInUser, $pushTokens);
     }
 
     public function getListUserNotInGroup () {
@@ -790,6 +849,73 @@ class UsersController extends AppController
                 'data' => $userList
             )
         );
+    }
+
+
+    public function deleteMessage(){
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $fc = new FirebaseComponent();
+
+        return $fc->deleteMessage($requestData, $loggedInUser);
+    }
+
+    public function deleteConversation(){
+        $this->response->type('json');
+        $this->autoRender = false;
+
+        //Authenticate
+        $loggedInUser = $this->authenticateUser(apache_request_headers());
+        if (empty($loggedInUser)) {
+            $this->response->statusCode(401);
+            return json_encode(
+                array(
+                    'message' => 'User is not authenticated',
+                    'data' => null
+                )
+            );
+        }
+
+        //Get request data
+        $requestData = $this->request->input('json_decode');
+        if (empty($requestData)) {
+            $this->response->statusCode(400);
+            return json_encode(
+                array(
+                    'message' => 'Request must have data',
+                    'data' => null
+                )
+            );
+        }
+
+        $fc = new FirebaseComponent();
+
+        return $fc->deleteConversation($requestData, $loggedInUser);
     }
 
 }
